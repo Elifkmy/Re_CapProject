@@ -34,11 +34,11 @@ namespace ConsoleUI
 
         }
 
-        private static void UserAdd(UserManager userManager)
-        {
-            User user = new User { UserId = 1, FirstName = "Ahmet", LastName = "Yılmaz", Email = "ahmetylmz01@gmail.com", Password = "12345" };
-            userManager.Add(user);
-        }
+        //private static void UserAdd(UserManager userManager)
+        //{
+        //    User user = new User { UserId = 1, FirstName = "Ahmet", LastName = "Yılmaz", Email = "ahmetylmz01@gmail.com", Password = "12345" };
+        //    userManager.Add(user);
+        //}
 
         private static void GetCustomerDetailsTest(CustomerManager customerManager)
         {
