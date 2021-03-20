@@ -11,6 +11,7 @@ namespace Business.Constants
         public static string MaintenanceTime = "Sistem Bakımda";
         public static string CarAdded = "Araç Eklendi.";
         public static string CarRegistrationInvalid = "Ekleme İşlemi Geçersiz.";
+        public static string CarDailyPriceInvalid = "Arabanın günlük fiyatı 0'dan büyük olmalıdır";
         public static string CarDeleted = "Araç Silindi.";
         public static string CarUpdated = "Araç Güncelleme Başarılı.";
         public static string CarsListed = "Araçlar Listelendi";
