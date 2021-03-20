@@ -26,8 +26,7 @@ namespace Business.Concrete
         {
             _carImageDal = carImageDal;
         }
-
-        [SecuredOperation("carImages.add,admin")]
+      
         [ValidationAspect(typeof(CarImageValidator))]
         [CacheRemoveAspect("ICarImageService.Get")]
         public IResult Add(IFormFile file, CarImage carImage)
@@ -42,11 +41,9 @@ namespace Business.Concrete
             carImage.ImagePath = ImageWriterHelper.UploadImage(file);
             carImage.Date = DateTime.Now;
             _carImageDal.Add(carImage);
-
             return new SuccessResult(Messages.CarImageAdded);
         }
 
-        [SecuredOperation("carImages.delete,admin")]
         [ValidationAspect(typeof(CarImageValidator))]
         [CacheRemoveAspect("ICarImageService.Get")]
         public IResult Delete(CarImage carImage)
@@ -73,15 +70,29 @@ namespace Business.Concrete
         [PerformanceAspect(5)]
         public IDataResult<List<CarImage>> GetImagesByCarId(int carId)
         {
-            return new SuccessDataResult<List<CarImage>>(CheckIfCarImageNull(carId));
+            IResult result = BusinessRules.Run(CheckIfCarImageNull(carId));
+
+            if (result != null)
+            {
+                return new ErrorDataResult<List<CarImage>>(result.Message);
+            }
+
+            return new SuccessDataResult<List<CarImage>>(CheckIfCarImageNull(carId).Data);
         }
 
-        [SecuredOperation("carImages.update,admin")]
         [ValidationAspect(typeof(CarImageValidator))]
         [CacheRemoveAspect("ICarImageService.Get")]
         public IResult Update(IFormFile file, CarImage carImage)
         {
-            carImage.ImagePath = ImageWriterHelper.Update(_carImageDal.Get(x=>x.CarImageId == carImage.CarImageId).ImagePath, file);
+            IResult result = BusinessRules.Run(CheckIfCarImageLimitExceeded(carImage.CarId));
+            if (result != null)
+            {
+                return result;
+            }
+
+            var oldPath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..\\..\\..\\wwwroot")) + _carImageDal.Get(p => p.CarImageId == carImage.CarImageId).ImagePath;
+
+            carImage.ImagePath = ImageWriterHelper.Update(oldPath, file);
             carImage.Date = DateTime.Now;
             _carImageDal.Update(carImage);
             return new SuccessResult();
@@ -97,17 +108,25 @@ namespace Business.Concrete
             return new SuccessResult();
         }
 
-        private List<CarImage> CheckIfCarImageNull(int carId)
+        private IDataResult<List<CarImage>> CheckIfCarImageNull(int carId)
         {
-            string path = @"WebAPI\wwwroot\Images\null.jpg";
-            CarImage carImage = new CarImage();
-            var result = _carImageDal.GetAll(c => c.CarId == carId).Any();
-            if (!result)
+            try
             {
-                return new List<CarImage> { new CarImage { CarId = carId, ImagePath = path, Date = DateTime.Now } };
+                string path = @"\images\default.jpg";
+                var result = _carImageDal.GetAll(c => c.CarId == carId).Any();
+
+                if (!result)
+                {
+                    List<CarImage> carImage = new List<CarImage>();
+                    carImage.Add(new CarImage { CarId = carId, ImagePath = path, Date = DateTime.Now });
+                    return new SuccessDataResult<List<CarImage>>(carImage);
+                }
             }
-            _carImageDal.Update(carImage);
-            return _carImageDal.GetAll(c => c.CarId == carId);
+            catch (Exception exception)
+            {
+                return new ErrorDataResult<List<CarImage>>(exception.Message);
+            }
+            return new SuccessDataResult<List<CarImage>>(_carImageDal.GetAll(c => c.CarId == carId));
         }
     }
 }

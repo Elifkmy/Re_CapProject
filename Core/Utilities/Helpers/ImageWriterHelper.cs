@@ -10,31 +10,25 @@ namespace Core.Utilities.Helpers
 {
     public class ImageWriterHelper
     {
-
         public static string UploadImage(IFormFile file)
         {
-            var sPath = Path.GetTempFileName();
+            string sPath = Path.GetTempFileName();
 
             if (file.Length > 0 && CheckIfImageFile(file))
             {
-                File_Stream(file, sPath);
+                using (var fileStream = new FileStream(sPath, FileMode.Create))
+                {
+                    file.CopyTo(fileStream);
+                }
             }
-            var fn = WriteNewFilePath(file);
+            string fn = WriteNewFilePath(file);
             File.Move(sPath, fn);
             return fn;
         }
 
         public static IResult Delete(string sPath)
         {
-            try
-            {
-                File.Delete(sPath);
-            }
-            catch (Exception e)
-            {
-
-                return new ErrorResult(e.Message);
-            }
+            File.Delete(sPath);
             return new SuccessResult();
         }
 
@@ -43,7 +37,10 @@ namespace Core.Utilities.Helpers
             string conclusion = WriteNewFilePath(file);
             if (sPath.Length > 0)
             {
-                File_Stream(file, conclusion);
+                using (var fileStream = new FileStream(conclusion, FileMode.Create))
+                {
+                    file.CopyTo(fileStream);
+                }
             }
 
             File.Delete(sPath);
@@ -93,9 +90,13 @@ namespace Core.Utilities.Helpers
             FileInfo fileInfo = new FileInfo(file.FileName);
             string fileExtension = fileInfo.Extension;
 
+            string newPath = Guid.NewGuid().ToString() + fileExtension;
             string path = Environment.CurrentDirectory + @"\wwwroot\Images";
-            var newPath = Guid.NewGuid().ToString() + "_" + DateTime.Now.Month + "_" + DateTime.Now.Day + "_" + DateTime.Now.Year + fileExtension;
-            
+
+            if (!Directory.Exists(path))
+            {
+                Directory.CreateDirectory(path);
+            }
 
             string result = $@"{path}\{newPath}";
             return result;
